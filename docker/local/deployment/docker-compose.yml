@@ -48,7 +48,7 @@ services:
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
       API_CONTEXT_PATH: ${API_CONTEXT_PATH}
     ports:
-      - '3000:3000'
+      - '8001:8001'
   worker:
     image: 'ghcr.io/novuhq/novu/worker:0.14.0'
     depends_on:
@@ -87,7 +87,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       WS_CONTEXT_PATH: ${WS_CONTEXT_PATH}
     ports:
-      - '3002:3002'
+      - '3003:3003'
   web:
     image: 'ghcr.io/novuhq/novu/web:0.14.0'
     depends_on:
