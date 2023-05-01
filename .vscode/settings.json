@@ -15,6 +15,11 @@
   "editor.codeActionsOnSave": {
     "source.fixAll": true
   },
-  "cSpell.words": ["mantine"],
-  "vsicons.presets.nestjs": true
+  "cSpell.words": [
+    "mantine"
+  ],
+  "vsicons.presets.nestjs": true,
+  "[dockercompose]": {
+    "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+  }
 }
