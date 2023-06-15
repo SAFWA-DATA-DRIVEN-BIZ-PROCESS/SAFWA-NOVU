@@ -102,7 +102,7 @@ async function setupRunner() {
 
       await waitPort({
         host: 'localhost',
-        port: 8001,
+        port: 3000,
       });
       await waitPort({
         host: 'localhost',
@@ -123,7 +123,7 @@ async function setupRunner() {
 
         Web: http://localhost:4200
         Widget: http://localhost:4500
-        API: http://localhost:8001
+        API: http://localhost:3000
         Worker: http://localhost:3004
       `);
     } else if (answers.runConfiguration === WEB_PROJECT) {
@@ -136,11 +136,11 @@ async function setupRunner() {
 
         await waitPort({
           host: 'localhost',
-          port: 8001,
+          port: 3000,
         });
         await waitPort({
           host: 'localhost',
-          port: 3003,
+          port: 3002,
         });
         await waitPort({
           host: 'localhost',
@@ -155,12 +155,11 @@ async function setupRunner() {
           Everything is running 🎊
         
           Web: http://localhost:4200
-          API: http://localhost:8001
-          WS: http://localhost:3003
+          API: http://localhost:3000
+          WS: http://localhost:3002
           Worker: http://localhost:3004
         `);
       } catch (e) {
-        // eslint-disable-next-line no-console
         console.error(`Failed to spin up the project ❌`, e);
       }
     } else if (answers.runConfiguration === DOCS) {
@@ -188,14 +187,13 @@ async function setupRunner() {
 
       await waitPort({
         host: 'localhost',
-        port: 8001,
+        port: 3000,
       });
       await waitPort({
         host: 'localhost',
         port: 3004,
       });
 
-      // eslint-disable-next-line no-console
       console.log(`
         Everything is running 🎊
 
