@@ -34,9 +34,9 @@ const prePopulateEnv = async (
           path.resolve(`${folderBasePath}/${folder}/${exampleEnvFilePath}`),
           path.resolve(`${folderBasePath}/${folder}/${envFilePath}`)
         );
+      } else {
+        console.log(`Skipping ${folderBasePath}/${folder}/${envFilePath}`);
       }
-
-      console.log(`Skipping ${folderBasePath}/${folder}/${envFilePath}`);
     }
   }
 };
