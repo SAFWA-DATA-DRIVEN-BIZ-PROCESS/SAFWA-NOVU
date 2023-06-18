@@ -8,18 +8,17 @@ import * as passport from 'passport';
 import * as compression from 'compression';
 import { NestFactory, Reflector } from '@nestjs/core';
 import * as bodyParser from 'body-parser';
-
 import * as Sentry from '@sentry/node';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-
+import { BullMqService, getErrorInterceptor, Logger as PinoLogger } from '@novu/application-generic';
 import { ExpressAdapter } from '@nestjs/platform-express';
+
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './app/shared/framework/response.interceptor';
 import { RolesGuard } from './app/auth/framework/roles.guard';
 import { SubscriberRouteGuard } from './app/auth/framework/subscriber-route.guard';
 import { validateEnv } from './config/env-validator';
-import { BullmqService } from '@novu/application-generic';
-import { getErrorInterceptor, Logger as PinoLogger } from '@novu/application-generic';
+
 import * as packageJson from '../package.json';
 
 const extendedBodySizeRoutes = ['/v1/events', '/v1/notification-templates', '/v1/layouts'];
@@ -41,7 +40,7 @@ if (process.env.SENTRY_DSN) {
 validateEnv();
 
 export async function bootstrap(expressApp?): Promise<INestApplication> {
-  BullmqService.haveProInstalled();
+  BullMqService.haveProInstalled();
 
   let app: INestApplication;
   if (expressApp) {
@@ -52,6 +51,13 @@ export async function bootstrap(expressApp?): Promise<INestApplication> {
 
   app.useLogger(app.get(PinoLogger));
   app.flushLogs();
+
+  const server = app.getHttpServer();
+  Logger.verbose(`Server timeout: ${server.timeout}`);
+  server.keepAliveTimeout = 61 * 1000;
+  Logger.verbose(`Server keepAliveTimeout: ${server.keepAliveTimeout / 1000}s `);
+  server.headersTimeout = 65 * 1000;
+  Logger.verbose(`Server headersTimeout: ${server.headersTimeout / 1000}s `);
 
   if (process.env.SENTRY_DSN) {
     app.use(Sentry.Handlers.requestHandler());
@@ -96,8 +102,8 @@ export async function bootstrap(expressApp?): Promise<INestApplication> {
     .addTag('Notification')
     .addTag('Integrations')
     .addTag('Layouts')
-    .addTag('Notification templates')
-    .addTag('Notification groups')
+    .addTag('Workflows')
+    .addTag('Workflow groups')
     .addTag('Changes')
     .addTag('Environments')
     .addTag('Inbound Parse')
@@ -117,10 +123,10 @@ export async function bootstrap(expressApp?): Promise<INestApplication> {
     await app.listen(process.env.PORT);
   }
 
-  Logger.log(`Started application in NODE_ENV=${process.env.NODE_ENV} on port ${process.env.PORT}`);
-
   // Starts listening for shutdown hooks
   app.enableShutdownHooks();
+
+  Logger.log(`Started application in NODE_ENV=${process.env.NODE_ENV} on port ${process.env.PORT}`);
 
   return app;
 }
@@ -133,7 +139,7 @@ const corsOptionsDelegate = function (req, callback) {
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   };
 
-  if (['dev', 'test', 'local'].includes(process.env.NODE_ENV) || isWidgetRoute(req.url)) {
+  if (['dev', 'test', 'local'].includes(process.env.NODE_ENV) || isWidgetRoute(req.url) || isBlueprintRoute(req.url)) {
     corsOptions.origin = '*';
   } else {
     corsOptions.origin = [process.env.FRONT_BASE_URL];
@@ -146,4 +152,8 @@ const corsOptionsDelegate = function (req, callback) {
 
 function isWidgetRoute(url: string) {
   return url.startsWith('/v1/widgets');
+}
+
+function isBlueprintRoute(url: string) {
+  return url.startsWith('/v1/blueprints');
 }

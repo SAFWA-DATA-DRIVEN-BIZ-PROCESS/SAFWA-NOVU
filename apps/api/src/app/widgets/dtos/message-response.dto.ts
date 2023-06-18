@@ -59,7 +59,7 @@ class MessageAction {
   status?: MessageActionStatusEnum;
 
   @ApiPropertyOptional({
-    type: [MessageButton],
+    type: MessageButton,
     isArray: true,
   })
   buttons?: MessageButton[];
@@ -203,6 +203,9 @@ export class MessageResponseDto {
 export class MessagesResponseDto {
   @ApiProperty()
   totalCount: number;
+
+  @ApiProperty()
+  hasMore: boolean;
 
   @ApiProperty()
   data: MessageResponseDto[];

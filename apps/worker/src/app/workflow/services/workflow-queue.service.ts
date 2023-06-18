@@ -10,6 +10,7 @@ import {
   CreateExecutionDetails,
   CreateExecutionDetailsCommand,
   DetailEnum,
+  INovuWorker,
 } from '@novu/application-generic';
 
 import {
@@ -31,8 +32,10 @@ interface IJobData {
   _userId: string;
 }
 
+const LOG_CONTEXT = 'WorkflowQueueService';
+
 @Injectable()
-export class WorkflowQueueService extends QueueService<IJobData> {
+export class WorkflowQueueService extends QueueService<IJobData> implements INovuWorker {
   constructor(
     @Inject(forwardRef(() => QueueNextJob)) private queueNextJob: QueueNextJob,
     @Inject(forwardRef(() => RunJob)) private runJob: RunJob,
@@ -43,6 +46,7 @@ export class WorkflowQueueService extends QueueService<IJobData> {
     @Inject(forwardRef(() => CreateExecutionDetails)) private createExecutionDetails: CreateExecutionDetails
   ) {
     super();
+    Logger.warn('Workflow queue service created');
     this.bullMqService.createWorker(this.name, this.getWorkerProcessor(), this.getWorkerOpts());
 
     this.bullMqService.worker.on('completed', async (job) => {
@@ -52,14 +56,6 @@ export class WorkflowQueueService extends QueueService<IJobData> {
     this.bullMqService.worker.on('failed', async (job, error) => {
       await this.jobHasFailed(job, error);
     });
-  }
-
-  public async gracefulShutdown() {
-    // Right now we only want this for testing purposes
-    if (process.env.NODE_ENV === 'test') {
-      await this.bullMqService.queue.drain();
-      await this.bullMqService.worker.close();
-    }
   }
 
   private getWorkerOpts(): WorkerOptions {
@@ -113,7 +109,7 @@ export class WorkflowQueueService extends QueueService<IJobData> {
         })
       );
     } catch (error) {
-      Logger.error('Failed to set job as completed', error);
+      Logger.error('Failed to set job as completed', LOG_CONTEXT, error);
     }
   }
 
@@ -137,7 +133,7 @@ export class WorkflowQueueService extends QueueService<IJobData> {
         await this.handleLastFailedWebhookFilter(job, error);
       }
     } catch (anotherError) {
-      Logger.error('Failed to set job as failed', anotherError);
+      Logger.error('Failed to set job as failed', LOG_CONTEXT, anotherError);
     }
   }
 
@@ -190,4 +186,14 @@ export class WorkflowQueueService extends QueueService<IJobData> {
       return await this.webhookFilterWebhookFilterBackoffStrategy.execute(command);
     };
   };
+
+  public async pauseWorker(): Promise<void> {
+    Logger.log('Pausing worker', LOG_CONTEXT);
+    await this.bullMqService.pauseWorker();
+  }
+
+  public async resumeWorker(): Promise<void> {
+    Logger.log('Resuming worker', LOG_CONTEXT);
+    await this.bullMqService.resumeWorker();
+  }
 }

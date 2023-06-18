@@ -1,19 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import {
   MessageRepository,
-  NotificationEntity,
-  NotificationRepository,
   NotificationStepEntity,
-  OrganizationEntity,
   OrganizationRepository,
   SubscriberRepository,
   EnvironmentRepository,
   IntegrationEntity,
   MessageEntity,
 } from '@novu/dal';
-import { ChannelTypeEnum, ExecutionDetailsSourceEnum, ExecutionDetailsStatusEnum, LogCodeEnum } from '@novu/shared';
+import {
+  ChannelTypeEnum,
+  EmailProviderIdEnum,
+  ExecutionDetailsSourceEnum,
+  ExecutionDetailsStatusEnum,
+  IAttachmentOptions,
+  IEmailOptions,
+  LogCodeEnum,
+} from '@novu/shared';
 import * as Sentry from '@sentry/node';
-import { IAttachmentOptions, IEmailOptions } from '@novu/stateless';
 import {
   InstrumentUsecase,
   DetailEnum,
@@ -30,7 +34,7 @@ import {
 import { CreateLog } from '../../../shared/logs';
 import { SendMessageCommand } from './send-message.command';
 import { SendMessageBase } from './send-message.base';
-import { PlatformException } from '../../../shared/utils/exceptions';
+import { PlatformException } from '../../../shared/utils';
 
 @Injectable()
 export class SendMessageEmail extends SendMessageBase {
@@ -39,7 +43,6 @@ export class SendMessageEmail extends SendMessageBase {
   constructor(
     protected environmentRepository: EnvironmentRepository,
     protected subscriberRepository: SubscriberRepository,
-    private notificationRepository: NotificationRepository,
     protected messageRepository: MessageRepository,
     protected createLogUsecase: CreateLog,
     protected createExecutionDetails: CreateExecutionDetails,
@@ -95,12 +98,6 @@ export class SendMessageEmail extends SendMessageBase {
     const emailChannel: NotificationStepEntity = command.step;
     if (!emailChannel) throw new PlatformException('Email channel step not found');
     if (!emailChannel.template) throw new PlatformException('Email channel template not found');
-
-    const notification = await this.notificationRepository.findById(command.notificationId);
-    if (!notification) throw new PlatformException(`Notification ${command.notificationId} not found`);
-
-    const organization: OrganizationEntity | null = await this.organizationRepository.findById(command.organizationId);
-    if (!organization) throw new PlatformException(`Organization ${command.organizationId} not found`);
 
     const email = command.payload.email || subscriber.email;
 
@@ -158,7 +155,7 @@ export class SendMessageEmail extends SendMessageBase {
       _environmentId: command.environmentId,
       _organizationId: command.organizationId,
       _subscriberId: command._subscriberId,
-      _templateId: notification._templateId,
+      _templateId: command._templateId,
       _messageTemplateId: emailChannel.template._id,
       subject,
       channel: ChannelTypeEnum.EMAIL,
@@ -254,19 +251,22 @@ export class SendMessageEmail extends SendMessageBase {
       mailData.replyTo = command.overrides?.email?.replyTo as string;
     }
 
+    if (integration.providerId === EmailProviderIdEnum.EmailWebhook) {
+      mailData.payloadDetails = payload;
+    }
+
     if (email && integration) {
       await this.sendMessage(
         integration,
         mailData,
         message,
         command,
-        notification,
         overrides?.senderName || emailChannel.template.senderName
       );
 
       return;
     }
-    await this.sendErrors(email, integration, message, command, notification);
+    await this.sendErrors(email, integration, message, command);
   }
 
   private async getReplyTo(command: SendMessageCommand, messageId: string): Promise<string | null> {
@@ -317,13 +317,7 @@ export class SendMessageEmail extends SendMessageBase {
     }
   }
 
-  private async sendErrors(
-    email,
-    integration,
-    message: MessageEntity,
-    command: SendMessageCommand,
-    notification: NotificationEntity
-  ) {
+  private async sendErrors(email, integration, message: MessageEntity, command: SendMessageCommand) {
     const errorMessage = 'Subscriber does not have an';
     const status = 'warning';
     const errorId = 'mail_unexpected_error';
@@ -337,7 +331,6 @@ export class SendMessageEmail extends SendMessageBase {
         errorId,
         mailErrorMessage,
         command,
-        notification,
         LogCodeEnum.SUBSCRIBER_MISSING_EMAIL
       );
 
@@ -364,7 +357,6 @@ export class SendMessageEmail extends SendMessageBase {
         errorId,
         integrationError,
         command,
-        notification,
         LogCodeEnum.MISSING_EMAIL_INTEGRATION
       );
 
@@ -389,7 +381,6 @@ export class SendMessageEmail extends SendMessageBase {
     mailData: IEmailOptions,
     message: MessageEntity,
     command: SendMessageCommand,
-    notification: NotificationEntity,
     senderName?: string
   ) {
     const mailFactory = new MailFactory();
@@ -430,7 +421,6 @@ export class SendMessageEmail extends SendMessageBase {
         'mail_unexpected_error',
         'Error while sending email with provider',
         command,
-        notification,
         LogCodeEnum.MAIL_PROVIDER_DELIVERY_ERROR,
         error
       );

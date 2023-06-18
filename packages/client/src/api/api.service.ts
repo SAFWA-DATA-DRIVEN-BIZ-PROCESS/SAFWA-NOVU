@@ -11,6 +11,7 @@ import {
   IStoreQuery,
   IUserPreferenceSettings,
   IUnseenCountQuery,
+  IUnreadCountQuery,
 } from '../index';
 
 export class ApiService {
@@ -47,30 +48,6 @@ export class ApiService {
         status,
         payload,
       }
-    );
-  }
-
-  /**
-   * @deprecated The method should not be used - Use markMessageAs instead.
-   */
-  async markMessageAsSeen(messageId: string | string[]): Promise<any> {
-    const messageIdString = messageId ? messageId.toString() : '';
-
-    return await this.httpClient.post(
-      `/widgets/messages/${messageIdString}/seen`,
-      {}
-    );
-  }
-
-  /**
-   * @deprecated The method should not be used - Use markMessageAs instead.
-   */
-  async markMessageAsRead(messageId: string | string[]): Promise<any> {
-    const messageIdString = messageId ? messageId.toString() : '';
-
-    return await this.httpClient.post(
-      `/widgets/messages/${messageIdString}/read`,
-      {}
     );
   }
 
@@ -147,7 +124,7 @@ export class ApiService {
     );
   }
 
-  async getUnreadCount(query: IUnseenCountQuery = {}) {
+  async getUnreadCount(query: IUnreadCountQuery = {}) {
     return await this.httpClient.get(
       '/widgets/notifications/unread',
       query as unknown as IParamObject
