@@ -23,7 +23,7 @@ services:
       - 27017:27017
     restart: unless-stopped
   api:
-    image: 'ghcr.io/novuhq/novu/api:0.15.0'
+    image: 'ghcr.io/novuhq/novu/api:0.16.0'
     depends_on:
       - mongodb
       - redis
@@ -55,7 +55,7 @@ services:
     ports:
       - '8001:8001'
   worker:
-    image: 'ghcr.io/novuhq/novu/worker:0.15.0'
+    image: 'ghcr.io/novuhq/novu/worker:0.16.0'
     depends_on:
       - mongodb
       - redis
@@ -79,7 +79,7 @@ services:
       NEW_RELIC_APP_NAME: ${NEW_RELIC_APP_NAME}
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
   ws:
-    image: 'ghcr.io/novuhq/novu/ws:0.15.0'
+    image: 'ghcr.io/novuhq/novu/ws:0.16.0'
     depends_on:
       - mongodb
       - redis
@@ -96,7 +96,7 @@ services:
     ports:
       - '3003:3003'
   web:
-    image: 'ghcr.io/novuhq/novu/web:0.15.0'
+    image: 'ghcr.io/novuhq/novu/web:0.16.0'
     depends_on:
       - api
       - worker
@@ -110,7 +110,7 @@ services:
     ports:
       - 4200:4200
   # widget:
-  #   image: 'ghcr.io/novuhq/novu/widget:0.15.0'
+  #   image: 'ghcr.io/novuhq/novu/widget:0.16.0'
   #   depends_on:
   #     - api
   #     - worker
@@ -126,7 +126,7 @@ services:
   # embed:
   #   depends_on:
   #     - widget
-  #   image: 'ghcr.io/novuhq/novu/embed:0.15.0'
+  #   image: 'ghcr.io/novuhq/novu/embed:0.16.0'
   #   container_name: embed
   #   environment:
   #     WIDGET_URL: ${WIDGET_URL}
