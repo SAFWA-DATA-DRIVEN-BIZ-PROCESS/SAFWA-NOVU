@@ -26,7 +26,7 @@ services:
     image: 'ghcr.io/novuhq/novu/api:0.15.0'
     depends_on:
       - mongodb
-      - redis
+      # - redis
     container_name: api
     environment:
       NODE_ENV: ${NODE_ENV}
@@ -58,7 +58,7 @@ services:
     image: 'ghcr.io/novuhq/novu/worker:0.15.0'
     depends_on:
       - mongodb
-      - redis
+      # - redis
     container_name: worker
     environment:
       NODE_ENV: ${NODE_ENV}
@@ -82,7 +82,7 @@ services:
     image: 'ghcr.io/novuhq/novu/ws:0.15.0'
     depends_on:
       - mongodb
-      - redis
+      # - redis
     container_name: ws
     environment:
       PORT: ${WS_PORT}
