@@ -13,6 +13,10 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
+    command: [ --auth ]
     volumes:
       - mongodb:/data/db
     ports:
@@ -105,28 +109,28 @@ services:
       REACT_APP_WS_URL: ${REACT_APP_WS_URL}
     ports:
       - 4200:4200
-  widget:
-    image: 'ghcr.io/novuhq/novu/widget:0.15.0'
-    depends_on:
-      - api
-      - worker
-      - web
-    container_name: widget
-    environment:
-      REACT_APP_API_URL: ${API_ROOT_URL}
-      REACT_APP_WS_URL: ${REACT_APP_WS_URL}
-      REACT_APP_ENVIRONMENT: ${NODE_ENV}
-      WIDGET_CONTEXT_PATH: ${WIDGET_CONTEXT_PATH}
-    ports:
-      - 4500:4500
-  embed:
-    depends_on:
-      - widget
-    image: 'ghcr.io/novuhq/novu/embed:0.15.0'
-    container_name: embed
-    environment:
-      WIDGET_URL: ${WIDGET_URL}
-    ports:
-      - 4701:4701
+  # widget:
+  #   image: 'ghcr.io/novuhq/novu/widget:0.15.0'
+  #   depends_on:
+  #     - api
+  #     - worker
+  #     - web
+  #   container_name: widget
+  #   environment:
+  #     REACT_APP_API_URL: ${API_ROOT_URL}
+  #     REACT_APP_WS_URL: ${REACT_APP_WS_URL}
+  #     REACT_APP_ENVIRONMENT: ${NODE_ENV}
+  #     WIDGET_CONTEXT_PATH: ${WIDGET_CONTEXT_PATH}
+  #   ports:
+  #     - 4500:4500
+  # embed:
+  #   depends_on:
+  #     - widget
+  #   image: 'ghcr.io/novuhq/novu/embed:0.15.0'
+  #   container_name: embed
+  #   environment:
+  #     WIDGET_URL: ${WIDGET_URL}
+  #   ports:
+  #     - 4701:4701
 volumes:
   mongodb: ~
