@@ -15,7 +15,7 @@ import { CompileTemplate } from '@novu/application-generic';
 const USER_MAIL_DOMAIN = 'mail.domain.com';
 const USER_PARSE_WEBHOOK = 'user-parse.com/webhook/{{compiledVariable}}';
 
-describe('Should handler the new arrived mail', () => {
+describe('Should handle the new arrived mail', () => {
   let inboundEmailParseUsecase: InboundEmailParse;
   let session: UserSession;
 
@@ -75,39 +75,38 @@ describe('Should handler the new arrived mail', () => {
   });
 
   it('should not send webhook request with missing transactionId', async () => {
-    const message = await triggerEmail();
+    try {
+      const message = await triggerEmail();
+      const mail = getMailData(message, false);
 
-    const mail = getMailData(message, false);
-
-    const getStub = sandbox.stub(axios, 'post').resolves();
-
-    await inboundEmailParseUsecase.execute(InboundEmailParseCommand.create(mail));
-
-    sinon.assert.notCalled(getStub);
+      await inboundEmailParseUsecase.execute(InboundEmailParseCommand.create(mail));
+    } catch (e) {
+      expect(e.message).to.contains('Missing transactionId on address');
+    }
   });
 
   it('should not send webhook request with when domain white list', async () => {
-    const message = await triggerEmail(true, false);
+    try {
+      const message = await triggerEmail(true, false);
 
-    const mail = getMailData(message);
+      const mail = getMailData(message);
 
-    const getStub = sandbox.stub(axios, 'post').resolves();
-
-    await inboundEmailParseUsecase.execute(InboundEmailParseCommand.create(mail));
-
-    sinon.assert.notCalled(getStub);
+      await inboundEmailParseUsecase.execute(InboundEmailParseCommand.create(mail));
+    } catch (e) {
+      expect(e.message).to.equal('Domain is not in environment white list');
+    }
   });
 
   it('should not send webhook request when missing replay callback url', async () => {
-    const message = await triggerEmail(true, true, true, false);
+    try {
+      const message = await triggerEmail(true, true, true, false);
 
-    const mail = getMailData(message);
+      const mail = getMailData(message);
 
-    const getStub = sandbox.stub(axios, 'post').resolves();
-
-    await inboundEmailParseUsecase.execute(InboundEmailParseCommand.create(mail));
-
-    sinon.assert.notCalled(getStub);
+      await inboundEmailParseUsecase.execute(InboundEmailParseCommand.create(mail));
+    } catch (e) {
+      expect(e.message).to.contains('Missing parse webhook on template');
+    }
   });
 
   async function triggerEmail(

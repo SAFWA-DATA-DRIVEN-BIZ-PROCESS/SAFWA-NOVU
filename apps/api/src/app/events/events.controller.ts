@@ -1,8 +1,14 @@
 import { Body, Controller, Delete, Param, Post, Scope, UseGuards } from '@nestjs/common';
 import { ApiOkResponse, ApiExcludeEndpoint, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { v4 as uuidv4 } from 'uuid';
-import { IJwtPayload, ISubscribersDefine, TriggerRecipientSubscriber } from '@novu/shared';
-import { EventsPerformanceService, SendTestEmail, SendTestEmailCommand } from '@novu/application-generic';
+import {
+  IJwtPayload,
+  ISubscribersDefine,
+  ITenantDefine,
+  TriggerRecipientSubscriber,
+  TriggerTenantContext,
+} from '@novu/shared';
+import { MapTriggerRecipients, SendTestEmail, SendTestEmailCommand } from '@novu/application-generic';
 
 import {
   BulkTriggerEventDto,
@@ -12,7 +18,6 @@ import {
   TriggerEventToAllRequestDto,
 } from './dtos';
 import { CancelDelayed, CancelDelayedCommand } from './usecases/cancel-delayed';
-import { MapTriggerRecipients } from './usecases/map-trigger-recipients';
 import { ParseEventRequest, ParseEventRequestCommand } from './usecases/parse-event-request';
 import { ProcessBulkTrigger, ProcessBulkTriggerCommand } from './usecases/process-bulk-trigger';
 import { TriggerEventToAll, TriggerEventToAllCommand } from './usecases/trigger-event-to-all';
@@ -22,6 +27,7 @@ import { ExternalApiAccessible } from '../auth/framework/external-api.decorator'
 import { JwtAuthGuard } from '../auth/framework/auth.guard';
 import { ApiResponse } from '../shared/framework/response.decorator';
 import { DataBooleanDto } from '../shared/dtos/data-wrapper-dto';
+
 @Controller({
   path: 'events',
   scope: Scope.REQUEST,
@@ -34,8 +40,7 @@ export class EventsController {
     private triggerEventToAll: TriggerEventToAll,
     private sendTestEmail: SendTestEmail,
     private parseEventRequest: ParseEventRequest,
-    private processBulkTriggerUsecase: ProcessBulkTrigger,
-    protected performanceService: EventsPerformanceService
+    private processBulkTriggerUsecase: ProcessBulkTrigger
   ) {}
 
   @ExternalApiAccessible()
@@ -54,7 +59,7 @@ export class EventsController {
     @UserSession() user: IJwtPayload,
     @Body() body: TriggerEventRequestDto
   ): Promise<TriggerEventResponseDto> {
-    const mark = this.performanceService.buildEndpointTriggerEventMark(body.transactionId as string);
+    const mappedTenant = body.tenant ? this.mapTenant(body.tenant) : null;
 
     const result = await this.parseEventRequest.execute(
       ParseEventRequestCommand.create({
@@ -66,11 +71,10 @@ export class EventsController {
         overrides: body.overrides || {},
         to: body.to,
         actor: body.actor,
+        tenant: mappedTenant,
         transactionId: body.transactionId,
       })
     );
-
-    this.performanceService.setEnd(mark);
 
     return result as unknown as TriggerEventResponseDto;
   }
@@ -115,6 +119,7 @@ export class EventsController {
   ): Promise<TriggerEventResponseDto> {
     const transactionId = body.transactionId || uuidv4();
     const mappedActor = body.actor ? this.mapActor(body.actor) : null;
+    const mappedTenant = body.tenant ? this.mapTenant(body.tenant) : null;
 
     return this.triggerEventToAll.execute(
       TriggerEventToAllCommand.create({
@@ -123,6 +128,7 @@ export class EventsController {
         organizationId: user.organizationId,
         identifier: body.name,
         payload: body.payload,
+        tenant: mappedTenant,
         transactionId,
         overrides: body.overrides || {},
         actor: mappedActor,
@@ -181,5 +187,11 @@ export class EventsController {
     if (!actor) return null;
 
     return this.mapTriggerRecipients.mapSubscriber(actor);
+  }
+
+  private mapTenant(tenant?: TriggerTenantContext | null): ITenantDefine | null {
+    if (!tenant) return null;
+
+    return this.parseEventRequest.mapTenant(tenant);
   }
 }

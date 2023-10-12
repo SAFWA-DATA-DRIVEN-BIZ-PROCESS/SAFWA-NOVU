@@ -39,11 +39,17 @@ const validators: { [K in keyof any]: ValidatorSpec<any[K]> } = {
   }),
   REDIS_DB_INDEX: num(),
   MONGO_URL: str(),
+  MONGO_MIN_POOL_SIZE: num({
+    default: 10,
+  }),
   MONGO_MAX_POOL_SIZE: num({
     default: 500,
   }),
   SEGMENT_TOKEN: str({
     default: undefined,
+  }),
+  LAUNCH_DARKLY_SDK_KEY: str({
+    default: '',
   }),
 };
 

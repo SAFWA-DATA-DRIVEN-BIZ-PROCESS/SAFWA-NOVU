@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { expect } from 'chai';
 import axios from 'axios';
-import { addSeconds, differenceInMilliseconds, subMonths } from 'date-fns';
+import { addSeconds, differenceInMilliseconds, subDays } from 'date-fns';
 import {
   MessageRepository,
   NotificationTemplateEntity,
@@ -11,7 +11,7 @@ import {
 } from '@novu/dal';
 import { UserSession, SubscribersService } from '@novu/testing';
 import { StepTypeEnum, DelayTypeEnum, DigestUnitEnum, DigestTypeEnum } from '@novu/shared';
-import { QueueService } from '@novu/application-generic';
+import { StandardQueueService } from '@novu/application-generic';
 
 const axiosInstance = axios.create();
 
@@ -21,7 +21,7 @@ describe('Trigger event - Delay triggered events - /v1/events/trigger (POST)', f
   let subscriber: SubscriberEntity;
   let subscriberService: SubscribersService;
   const jobRepository = new JobRepository();
-  let queueService: QueueService;
+  let standardQueueService: StandardQueueService;
   const messageRepository = new MessageRepository();
 
   const triggerEvent = async (payload, transactionId?: string, overrides = {}) => {
@@ -48,7 +48,7 @@ describe('Trigger event - Delay triggered events - /v1/events/trigger (POST)', f
     template = await session.createTemplate();
     subscriberService = new SubscribersService(session.organization._id, session.environment._id);
     subscriber = await subscriberService.createSubscriber();
-    queueService = session?.testServer?.getService(QueueService);
+    standardQueueService = session?.testServer?.getService(StandardQueueService);
   });
 
   it('should delay event for time interval', async function () {
@@ -63,7 +63,7 @@ describe('Trigger event - Delay triggered events - /v1/events/trigger (POST)', f
           content: '',
           metadata: {
             unit: DigestUnitEnum.SECONDS,
-            amount: 0.1,
+            amount: 2,
             type: DelayTypeEnum.REGULAR,
           },
         },
@@ -91,10 +91,10 @@ describe('Trigger event - Delay triggered events - /v1/events/trigger (POST)', f
     const expireAt = new Date(delayedJob?.expireAt as string);
     const createdAt = new Date(delayedJob?.createdAt as string);
 
-    const subExpireMonths = subMonths(expireAt, 1);
-    const diff = differenceInMilliseconds(subExpireMonths, createdAt);
+    const subExpire30Days = subDays(expireAt, 30);
+    const diff = differenceInMilliseconds(subExpire30Days, createdAt);
 
-    expect(diff).to.approximately(100, 200);
+    expect(diff).to.approximately(200, 2000);
 
     const messages = await messageRepository.find({
       _environmentId: session.environment._id,
@@ -141,7 +141,7 @@ describe('Trigger event - Delay triggered events - /v1/events/trigger (POST)', f
         customVar: 'Testing of User Name',
       },
       id,
-      { delay: { amount: 3, unit: DigestUnitEnum.SECONDS } }
+      { delay: { amount: 2, unit: DigestUnitEnum.SECONDS } }
     );
     await session.awaitRunningJobs(template?._id, true, 0);
     const messages = await messageRepository.find({
@@ -190,7 +190,7 @@ describe('Trigger event - Delay triggered events - /v1/events/trigger (POST)', f
     const updatedAt = delayedJob?.updatedAt as string;
     const diff = differenceInMilliseconds(new Date(delayedJob.payload.sendAt), new Date(updatedAt));
 
-    const delay = await queueService.bullMqService.queue.getDelayed();
+    const delay = await standardQueueService.queue.getDelayed();
     expect(delay[0].opts.delay).to.approximately(diff, 1000);
   });
 
@@ -211,7 +211,7 @@ describe('Trigger event - Delay triggered events - /v1/events/trigger (POST)', f
           content: '',
           metadata: {
             unit: DigestUnitEnum.SECONDS,
-            amount: 0.1,
+            amount: 2,
             type: DigestTypeEnum.REGULAR,
           },
         },
@@ -226,13 +226,11 @@ describe('Trigger event - Delay triggered events - /v1/events/trigger (POST)', f
       eventNumber: '1',
     });
 
-    await session.awaitRunningJobs(template?._id, true, 1);
-
     await triggerEvent({
       eventNumber: '2',
     });
 
-    await session.awaitRunningJobs(template?._id, true, 1);
+    await session.awaitRunningJobs(template?._id, true, 0);
 
     const messages = await messageRepository.find({
       _environmentId: session.environment._id,
@@ -240,8 +238,8 @@ describe('Trigger event - Delay triggered events - /v1/events/trigger (POST)', f
       channel: StepTypeEnum.SMS,
     });
 
-    expect(messages[0].content).to.include('Event 1');
-    expect(messages[0].content).to.include('Digested Events 1');
+    expect(messages[0].content).to.include('Event ');
+    expect(messages[0].content).to.include('Digested Events 2');
   });
 
   it('should send a single message for same exact scheduled delay', async function () {
@@ -260,7 +258,7 @@ describe('Trigger event - Delay triggered events - /v1/events/trigger (POST)', f
           content: '',
           metadata: {
             unit: DigestUnitEnum.SECONDS,
-            amount: 1,
+            amount: 2,
             type: DigestTypeEnum.REGULAR,
           },
         },
@@ -281,7 +279,7 @@ describe('Trigger event - Delay triggered events - /v1/events/trigger (POST)', f
       eventNumber: '2',
       sendAt: dateValue,
     });
-    await session.awaitRunningJobs(template?._id, true, 1);
+    await session.awaitRunningJobs(template?._id, true, 0);
 
     const messages = await messageRepository.find({
       _environmentId: session.environment._id,

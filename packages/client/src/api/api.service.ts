@@ -12,6 +12,7 @@ import {
   IUserPreferenceSettings,
   IUnseenCountQuery,
   IUnreadCountQuery,
+  IUserGlobalPreferenceSettings,
 } from '../index';
 
 export class ApiService {
@@ -70,6 +71,14 @@ export class ApiService {
     return await this.httpClient.delete(`/widgets/messages/${messageId}`, {});
   }
 
+  async removeAllMessages(feedId?: string): Promise<any> {
+    const url = feedId
+      ? `/widgets/messages?feedId=${feedId}`
+      : `/widgets/messages`;
+
+    return await this.httpClient.delete(url);
+  }
+
   async markAllMessagesAsRead(feedId?: string | string[]): Promise<any> {
     return await this.httpClient.post(`/widgets/messages/read`, {
       feedId,
@@ -84,13 +93,16 @@ export class ApiService {
 
   async getNotificationsList(
     page: number,
-    query: IStoreQuery = {}
+    { payload, ...rest }: IStoreQuery = {}
   ): Promise<IPaginatedResponse<IMessage>> {
+    const payloadString = payload ? btoa(JSON.stringify(payload)) : undefined;
+
     return await this.httpClient.getFullResponse(
       `/widgets/notifications/feed`,
       {
         page,
-        ...query,
+        payload: payloadString,
+        ...rest,
       }
     );
   }
@@ -146,6 +158,10 @@ export class ApiService {
     return this.httpClient.get('/widgets/preferences');
   }
 
+  async getUserGlobalPreference(): Promise<IUserGlobalPreferenceSettings[]> {
+    return this.httpClient.get('/widgets/preferences/global');
+  }
+
   async updateSubscriberPreference(
     templateId: string,
     channelType: string,
@@ -153,6 +169,19 @@ export class ApiService {
   ): Promise<IUserPreferenceSettings> {
     return await this.httpClient.patch(`/widgets/preferences/${templateId}`, {
       channel: { type: channelType, enabled },
+    });
+  }
+
+  async updateSubscriberGlobalPreference(
+    preferences: { channelType: string; enabled: boolean }[],
+    enabled?: boolean
+  ): Promise<IUserPreferenceSettings> {
+    return await this.httpClient.patch(`/widgets/preferences`, {
+      preferences: preferences.map((preference) => ({
+        ...preference,
+        type: preference.channelType,
+      })),
+      enabled,
     });
   }
 }

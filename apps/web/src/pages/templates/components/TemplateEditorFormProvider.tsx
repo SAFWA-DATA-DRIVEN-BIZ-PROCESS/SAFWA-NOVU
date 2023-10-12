@@ -162,6 +162,7 @@ const TemplateEditorFormProvider = ({ children }) => {
         identifier: newIdentifier,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
 
   const { template, isLoading, isCreating, isUpdating, isDeleting, updateNotificationTemplate } =
@@ -192,10 +193,8 @@ const TemplateEditorFormProvider = ({ children }) => {
           },
         });
         setTrigger(response.triggers[0]);
-        reset({
-          ...form,
-          steps: response.steps,
-        });
+        reset(mapNotificationTemplateToForm(response));
+
         if (showMessage) {
           successMessage('Trigger code is updated successfully', 'workflowSaved');
         }
@@ -205,7 +204,7 @@ const TemplateEditorFormProvider = ({ children }) => {
         errorMessage(e.message || 'Unexpected error occurred');
       }
     },
-    [templateId, updateNotificationTemplate, setTrigger]
+    [templateId, updateNotificationTemplate, setTrigger, reset]
   );
 
   const addStep = useCallback(

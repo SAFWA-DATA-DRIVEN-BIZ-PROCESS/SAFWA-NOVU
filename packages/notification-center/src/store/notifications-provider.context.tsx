@@ -3,7 +3,13 @@ import type { IMessage } from '@novu/shared';
 
 import { NotificationsContext } from './notifications.context';
 import type { IStore } from '../shared/interfaces';
-import { useFetchNotifications, useRemoveNotification, useUnseenCount } from '../hooks';
+import {
+  useFetchNotifications,
+  useRemoveNotification,
+  useRemoveAllNotifications,
+  useUnseenCount,
+  useUnreadCount,
+} from '../hooks';
 import { useMarkNotificationsAs } from '../hooks';
 import { useMarkNotificationsAsRead } from '../hooks/useMarkNotificationAsRead';
 import { useMarkNotificationsAsSeen } from '../hooks/useMarkNotificationAsSeen';
@@ -38,8 +44,10 @@ function NotificationsProviderInternal({ children }: { children: React.ReactNode
     refetch,
   } = useFetchNotifications({ query: storeQuery });
   const { data: unseenCountData } = useUnseenCount();
+  const { data: unreadCountData } = useUnreadCount();
   const { markNotificationsAs } = useMarkNotificationsAs();
   const { removeNotification } = useRemoveNotification();
+  const { removeAllNotifications } = useRemoveAllNotifications();
   const { markNotificationsAsRead } = useMarkNotificationsAsRead();
   const { markNotificationsAsSeen } = useMarkNotificationsAsSeen();
 
@@ -53,7 +61,10 @@ function NotificationsProviderInternal({ children }: { children: React.ReactNode
     [markNotificationsAs]
   );
   const removeMessage = useCallback((messageId: string) => removeNotification({ messageId }), [removeNotification]);
-
+  const removeAllMessages = useCallback(
+    (feedId?: string) => removeAllNotifications({ feedId }),
+    [removeAllNotifications]
+  );
   const markAllNotificationsAsRead = useCallback(() => {
     markNotificationsAsRead({ feedId: storeQuery?.feedIdentifier });
   }, [markNotificationsAsRead, storeQuery?.feedIdentifier]);
@@ -112,6 +123,7 @@ function NotificationsProviderInternal({ children }: { children: React.ReactNode
       storeId,
       stores,
       unseenCount: unseenCountData?.count ?? 0,
+      unreadCount: unreadCountData?.count ?? 0,
       notifications,
       hasNextPage,
       isLoading,
@@ -126,6 +138,7 @@ function NotificationsProviderInternal({ children }: { children: React.ReactNode
       markFetchedNotificationsAsRead,
       markFetchedNotificationsAsSeen,
       removeMessage,
+      removeAllMessages,
       markAllNotificationsAsRead,
       markAllNotificationsAsSeen,
     }),
@@ -134,6 +147,7 @@ function NotificationsProviderInternal({ children }: { children: React.ReactNode
       storeId,
       stores,
       unseenCountData?.count,
+      unreadCountData?.count,
       notifications,
       hasNextPage,
       isLoading,
@@ -148,6 +162,7 @@ function NotificationsProviderInternal({ children }: { children: React.ReactNode
       markFetchedNotificationsAsRead,
       markFetchedNotificationsAsSeen,
       removeMessage,
+      removeAllMessages,
       markAllNotificationsAsRead,
       markAllNotificationsAsSeen,
     ]
