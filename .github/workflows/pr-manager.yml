@@ -1,4 +1,4 @@
-# name: "Pull Request Manager"
+name: "Pull Request Manager"
 # on:
 #   schedule:
 #     - cron: '0 * * * *'
