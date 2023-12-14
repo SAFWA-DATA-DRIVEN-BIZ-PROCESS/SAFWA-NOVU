@@ -69,6 +69,7 @@ export class SubscriberJobBound {
       actor,
       tenant,
       identifier,
+      _subscriberSource,
     } = command;
 
     const template = await this.getNotificationTemplate({
@@ -83,15 +84,16 @@ export class SubscriberJobBound {
 
     await this.validateSubscriberIdProperty(subscriber);
 
-    this.analyticsService.track(
+    this.analyticsService.mixpanelTrack(
       'Notification event trigger - [Triggers]',
-      command.userId,
+      '',
       {
         transactionId: command.transactionId,
         _template: template._id,
         _organization: command.organizationId,
         channels: template?.steps.map((step) => step.template?.type),
         source: command.payload.__source || 'api',
+        subscriberSource: _subscriberSource || null,
       }
     );
 
@@ -136,7 +138,7 @@ export class SubscriberJobBound {
         to: subscriber,
         transactionId: command.transactionId,
         userId,
-        ...(actor ? actor : {}),
+        ...(actor && { actor }),
         tenant,
       })
     );
