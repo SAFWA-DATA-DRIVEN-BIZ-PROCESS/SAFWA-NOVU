@@ -15,18 +15,21 @@ export class ExternalServicesRoute {
 
   public async execute(command: ExternalServicesRouteCommand) {
     const isOnline = await this.connectionExist(command);
-    if (isOnline) {
-      if (command.event === WebSocketEventEnum.RECEIVED) {
-        await this.processReceivedEvent(command);
-      }
 
-      if (command.event === WebSocketEventEnum.UNSEEN) {
-        await this.sendUnseenCountChange(command);
-      }
+    if (!isOnline) {
+      return;
+    }
 
-      if (command.event === WebSocketEventEnum.UNREAD) {
-        await this.sendUnreadCountChange(command);
-      }
+    if (command.event === WebSocketEventEnum.RECEIVED) {
+      await this.processReceivedEvent(command);
+    }
+
+    if (command.event === WebSocketEventEnum.UNSEEN) {
+      await this.sendUnseenCountChange(command);
+    }
+
+    if (command.event === WebSocketEventEnum.UNREAD) {
+      await this.sendUnreadCountChange(command);
     }
   }
 
@@ -38,7 +41,10 @@ export class ExternalServicesRoute {
       await this.wsGateway.sendMessage(command.userId, command.event, command.payload);
     } else if (messageId) {
       Logger.verbose('Sending messageId in the payload, we need to retrieve the full message', LOG_CONTEXT);
-      const storedMessage = await this.messageRepository.findById(messageId);
+      const storedMessage = await this.messageRepository.findOne({
+        _id: messageId,
+        _environmentId: command._environmentId,
+      });
       await this.wsGateway.sendMessage(command.userId, command.event, { message: storedMessage });
     }
 
@@ -51,12 +57,6 @@ export class ExternalServicesRoute {
 
   private async sendUnreadCountChange(command: ExternalServicesRouteCommand) {
     if (!command._environmentId) {
-      return;
-    }
-
-    const connection = await this.connectionExist(command);
-
-    if (!connection) {
       return;
     }
 
@@ -82,12 +82,6 @@ export class ExternalServicesRoute {
 
   private async sendUnseenCountChange(command: ExternalServicesRouteCommand) {
     if (!command._environmentId) {
-      return;
-    }
-
-    const connection = await this.connectionExist(command);
-
-    if (!connection) {
       return;
     }
 
@@ -124,7 +118,13 @@ export class ExternalServicesRoute {
     }
   }
 
-  private async connectionExist(command: ExternalServicesRouteCommand) {
+  private async connectionExist(command: ExternalServicesRouteCommand): Promise<boolean | undefined> {
+    if (!this.wsGateway.server) {
+      Logger.error('No sw server found, unable to check if connection exists', LOG_CONTEXT);
+
+      return;
+    }
+
     return !!(await this.wsGateway.server.sockets.in(command.userId).fetchSockets()).length;
   }
 }

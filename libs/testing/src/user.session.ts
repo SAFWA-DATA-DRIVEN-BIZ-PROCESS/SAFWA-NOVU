@@ -4,7 +4,15 @@ import { SuperTest, Test } from 'supertest';
 import * as request from 'supertest';
 import * as defaults from 'superagent-defaults';
 import { v4 as uuid } from 'uuid';
-import { ChannelTypeEnum, EmailBlockTypeEnum, IEmailBlock, StepTypeEnum, TriggerRecipientsPayload } from '@novu/shared';
+import {
+  ApiServiceLevelEnum,
+  EmailBlockTypeEnum,
+  IApiRateLimitMaximum,
+  IEmailBlock,
+  JobTopicNameEnum,
+  StepTypeEnum,
+  TriggerRecipientsPayload,
+} from '@novu/shared';
 import {
   UserEntity,
   EnvironmentEntity,
@@ -296,12 +304,16 @@ export class UserSession {
     unfinishedJobs = 0,
     organizationId = this.organization._id
   ) {
-    await this.jobsService.awaitRunningJobs({
+    return await this.jobsService.awaitRunningJobs({
       templateId,
       organizationId,
       delay,
       unfinishedJobs,
     });
+  }
+
+  public async queueGet(jobTopicName: JobTopicNameEnum, getter: 'getDelayed') {
+    return await this.jobsService.queueGet(jobTopicName, getter);
   }
 
   public async applyChanges(where: Partial<ChangeEntity> = {}) {
@@ -321,5 +333,15 @@ export class UserSession {
     for (const change of changes) {
       await this.testAgent.post(`/v1/changes/${change._id}/apply`);
     }
+  }
+
+  public async updateOrganizationServiceLevel(serviceLevel: ApiServiceLevelEnum) {
+    const organizationService = new OrganizationService();
+
+    await organizationService.updateServiceLevel(this.organization._id, serviceLevel);
+  }
+
+  public async updateEnvironmentApiRateLimits(apiRateLimits: Partial<IApiRateLimitMaximum>) {
+    await this.environmentService.updateApiRateLimits(this.environment._id, apiRateLimits);
   }
 }
