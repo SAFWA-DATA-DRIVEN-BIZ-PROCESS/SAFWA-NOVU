@@ -6,7 +6,7 @@ STORE_ENCRYPTION_KEY="d9Xv8WfJC8Lu%8dY4Pph3B9&&Mt+&LVm"
 # General
 NODE_ENV=production
 
-MONGO_URL=mongodb://admin:pass1234@mongodb:27017/novu-db
+MONGO_URL=mongodb://admin:pass1234@mongodb:27017/novu-db?w=majority
 # MONGO_URL=mongodb://mongodb:27017/novu-db
 MONGO_MAX_POOL_SIZE=500
 MONGO_INITDB_ROOT_USERNAME=admin
