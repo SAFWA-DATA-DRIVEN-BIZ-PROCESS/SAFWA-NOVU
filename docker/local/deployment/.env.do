@@ -31,16 +31,16 @@ REDIS_CACHE_SERVICE_PORT=6379
 WS_PORT=3002
 
 # Root URL
-REACT_APP_WS_URL=http://localhost:3002
+REACT_APP_WS_URL=http://209.97.171.65:3002
 # Uncomment this one when deploying Novu in the local environment
-# as Web app local Dockerfile will have to load this to be used. 
+# as Web app local Dockerfile will have to load this to be used.
 # Deployment version doesn't need as we inject it with API_ROOT_URL value.
 # REACT_APP_API_URL=http://localhost:3000
-API_ROOT_URL=http://localhost:3000
+API_ROOT_URL=http://209.97.171.65:3000
 DISABLE_USER_REGISTRATION=false
-FRONT_BASE_URL=http://client:4200
-WIDGET_EMBED_PATH=http://localhost:4701/embed.umd.min.js
-WIDGET_URL=http://localhost:4500
+FRONT_BASE_URL=http://209.97.171.65:4200
+WIDGET_EMBED_PATH=http://209.97.171.65:4701/embed.umd.min.js
+WIDGET_URL=http://209.97.171.65:4500
 
 # Context Paths
 # Only needed for setups with reverse-proxies
